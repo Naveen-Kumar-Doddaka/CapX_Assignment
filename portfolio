@@ -1,0 +1,117 @@
+// Complete Portfolio Tracker Application
+
+// Frontend: React Application
+// File: App.js
+
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const App = () => {
+  const [stocks, setStocks] = useState([]);
+  const [form, setForm] = useState({ stockName: '', ticker: '', buyPrice: '' });
+  const [totalValue, setTotalValue] = useState(0);
+
+  useEffect(() => {
+    fetchStocks();
+  }, []);
+
+  const fetchStocks = async () => {
+    try {
+      const response = await axios.get('/api/stocks');
+      setStocks(response.data);
+      calculateTotalValue(response.data);
+    } catch (error) {
+      console.error('Error fetching stocks:', error);
+    }
+  };
+
+  const calculateTotalValue = (stocks) => {
+    let total = 0;
+    stocks.forEach(stock => {
+      total += stock.currentPrice;
+    });
+    setTotalValue(total);
+  };
+
+  const handleAddStock = async () => {
+    try {
+      const response = await axios.post('/api/stocks', { ...form });
+      setStocks([...stocks, response.data]);
+      setForm({ stockName: '', ticker: '', buyPrice: '' });
+    } catch (error) {
+      console.error('Error adding stock:', error);
+    }
+  };
+
+  const handleDeleteStock = async (id) => {
+    try {
+      await axios.delete(`/api/stocks/${id}`);
+      setStocks(stocks.filter(stock => stock.id !== id));
+    } catch (error) {
+      console.error('Error deleting stock:', error);
+    }
+  };
+
+  return (
+    <div className="App">
+      <h1>Portfolio Tracker</h1>
+      <div>
+        <h2>Dashboard</h2>
+        <p>Total Portfolio Value: ${totalValue}</p>
+      </div>
+
+      <div>
+        <h2>Add Stock</h2>
+        <input
+          type="text"
+          placeholder="Stock Name"
+          value={form.stockName}
+          onChange={(e) => setForm({ ...form, stockName: e.target.value })}
+        />
+        <input
+          type="text"
+          placeholder="Ticker"
+          value={form.ticker}
+          onChange={(e) => setForm({ ...form, ticker: e.target.value })}
+        />
+        <input
+          type="number"
+          placeholder="Buy Price"
+          value={form.buyPrice}
+          onChange={(e) => setForm({ ...form, buyPrice: e.target.value })}
+        />
+        <button onClick={handleAddStock}>Add Stock</button>
+      </div>
+
+      <div>
+        <h2>Stock Holdings</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Stock Name</th>
+              <th>Ticker</th>
+              <th>Buy Price</th>
+              <th>Current Price</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stocks.map((stock) => (
+              <tr key={stock.id}>
+                <td>{stock.stockName}</td>
+                <td>{stock.ticker}</td>
+                <td>{stock.buyPrice}</td>
+                <td>{stock.currentPrice}</td>
+                <td>
+                  <button onClick={() => handleDeleteStock(stock.id)}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default App;
